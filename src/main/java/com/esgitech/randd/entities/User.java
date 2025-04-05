@@ -12,9 +12,7 @@ import org.springframework.data.annotation.CreatedDate;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Entity
 @AllArgsConstructor
@@ -31,11 +29,13 @@ public class User{
 
     @NotBlank(message="first name is required")
     @NotNull
-    private String fname;
+    private String firstName;
 
     @NotBlank(message="last name is required")
     @NotNull
-    private String lname;
+    private String lastName;
+
+    private String userName;
 
     private String email;
 
@@ -57,12 +57,12 @@ public class User{
     public String toString() {
         return "User{" +
                 "id=" + id +
-                ", fname='" + fname + '\'' +
-                ", lname='" + lname + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", username='" + userName + '\'' +
                 ", email='" + email + '\'' +
                 ", password='" + password + '\'' +
                 ", role=" + role +
-                ", createdAt=" + createdAt +
                 '}';
     }
 }

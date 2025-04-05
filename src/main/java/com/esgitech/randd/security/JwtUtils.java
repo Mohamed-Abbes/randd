@@ -1,5 +1,6 @@
 package com.esgitech.randd.security;
 
+import com.esgitech.randd.enums.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -29,9 +30,12 @@ public class JwtUtils {
         this.key = new SecretKeySpec(keyBytes, "HmacSHA256");
     }
 
-    public String generateToken(String email){
+    public String generateToken(String email, Role role, Long id, String userName) {
         return Jwts.builder()
                 .subject(email)
+                .claim("userName",userName)
+                .claim("role", role)
+                .claim("id", id)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME_MILLIS))
                 .signWith(key)

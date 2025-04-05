@@ -32,7 +32,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.csrf(AbstractHttpConfigurer::disable)
-                .cors(Customizer.withDefaults())
+                .cors(Customizer.withDefaults())  //Can be further enhanced look at the page 160, book full_stack_development_with_spring
                 .exceptionHandling(exception->exception
                         .accessDeniedHandler(customAccessDeniedHandler)
                         .authenticationEntryPoint(customAuthenticationEntryPoint)
@@ -44,6 +44,12 @@ public class SecurityConfig {
                 .sessionManagement(manager->manager
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class);
+
+        //for more fine-grained security configuration !!!!!
+//        .authorizeHttpRequests((authorizeHttpRequests) -> authorizeHttpRequests
+//                .requestMatchers("/admin/**").hasRole("ADMIN")
+//                .requestMatchers("/user/**").hasRole("USER")
+//                .anyRequest().authenticated())
 
         return httpSecurity.build();
 

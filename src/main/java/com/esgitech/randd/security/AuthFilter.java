@@ -44,7 +44,7 @@ public class AuthFilter extends OncePerRequestFilter {
         try {
             filterChain.doFilter(request, response);
         } catch (Exception e) {
-            log.error("Exception occurred in AuthFiler" + e.getMessage());
+            log.error("Exception occurred in AuthFiler:" + e.getMessage());
         }
     }
 

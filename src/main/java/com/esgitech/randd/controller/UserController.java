@@ -2,14 +2,18 @@ package com.esgitech.randd.controller;
 
 
 import com.esgitech.randd.dtos.Response;
+import com.esgitech.randd.dtos.Rs;
 import com.esgitech.randd.dtos.UserDTO;
+import com.esgitech.randd.entities.User;
+import com.esgitech.randd.enums.Role;
 import com.esgitech.randd.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -20,8 +24,7 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/all")
-    @PreAuthorize("hasAnyAuthority('ADMIN')")
-    public ResponseEntity<Response> getAllUsers() {
+    public ResponseEntity<Rs> getAllUsers() {
         log.info("Get all users");
         return ResponseEntity.ok(userService.getAllUsers());
     }
@@ -37,10 +40,20 @@ public class UserController {
         return ResponseEntity.ok(userService.updateUser(id, userDTO));
     }
 
-    @DeleteMapping ("/delete/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN')")
+    @DeleteMapping ("/delete/{id}")     //Role based access control @PreAuthorize("hasAnyAuthority('ADMIN')")
     public ResponseEntity<Response> deleteUser(@PathVariable  Long id) {
         return ResponseEntity.ok(userService.deleteUser(id));
+    }
+
+    @GetMapping("/search")
+    public List<User> searchUsers(@RequestParam String term) {
+        return userService.searchUsers(term);
+    }
+
+    @GetMapping("/role/{id}")
+    public ResponseEntity<Response> revokeUserRole(@PathVariable Long id) {
+        System.out.println(id);
+        return ResponseEntity.ok(userService.revokeUserRole(id));
     }
 
 }

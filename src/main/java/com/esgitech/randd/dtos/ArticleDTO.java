@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @AllArgsConstructor
@@ -19,6 +20,8 @@ public class ArticleDTO {
     private String content;
 
     private Category category;
+
+    private byte[] pdfData;
 
     private UserDTO user;
 

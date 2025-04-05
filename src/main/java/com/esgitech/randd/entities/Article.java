@@ -10,10 +10,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-import org.springframework.data.annotation.CreatedDate;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Entity
 @AllArgsConstructor
@@ -31,16 +29,26 @@ public class Article {
     @NotNull
     private String title;
 
+    @Column(name = "pdf_file_name")
+    private String pdfFileName;
+
+    private String doi;
+
     @NotBlank(message = "content is required")
     @NotNull
     private String content;
 
+    @Enumerated(EnumType.STRING)
     private Category category;
 
     @ManyToOne
     @JoinColumn(name="users_id", nullable=false)
     @JsonIgnore
     private User user;
+
+    @Lob
+    @Column(columnDefinition = "LONGBLOB")
+    private byte[] pdfData;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

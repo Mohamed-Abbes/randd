@@ -1,9 +1,6 @@
 package com.esgitech.randd.service.impl;
 
-import com.esgitech.randd.dtos.LoginRequest;
-import com.esgitech.randd.dtos.RegisterRequest;
-import com.esgitech.randd.dtos.Response;
-import com.esgitech.randd.dtos.UserDTO;
+import com.esgitech.randd.dtos.*;
 import com.esgitech.randd.entities.User;
 import com.esgitech.randd.enums.Role;
 import com.esgitech.randd.exception.InvalidCredentialsException;
@@ -18,9 +15,9 @@ import org.modelmapper.TypeToken;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+
 
 @Service
 @RequiredArgsConstructor
@@ -31,15 +28,19 @@ public class UserServiceImpl implements UserService {
     private final JwtUtils jwtUtils;
     private final PasswordEncoder passwordEncoder;
 
+
+
     @Override
     public Response registerUser(RegisterRequest registerRequest) {
         User userTosave = User.builder()
-                .fname(registerRequest.getFname())
-                .lname(registerRequest.getLname())
+                .firstName(registerRequest.getFirstName())
+                .lastName(registerRequest.getLastName())
+                .userName(registerRequest.getUserName())
                 .email(registerRequest.getEmail())
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
                 .role(registerRequest.getRole() != null ? registerRequest.getRole() : Role.USER)
                 .build();
+
         userRepository.save(userTosave);
         return Response.builder()
                 .status(200)
@@ -49,29 +50,28 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Response loginUser(LoginRequest loginRequest) {
-        log.info("Login request received");
+        UserServiceImpl.log.info("Login request received");
         User user = userRepository.findUserByEmail(loginRequest.getEmail())
                 .orElseThrow(()-> new NotFoundException("Email not found"));
 
         if(!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())){
             throw new InvalidCredentialsException("Invalid password");
         }
-        String token = jwtUtils.generateToken(user.getEmail());
+        String token = jwtUtils.generateToken(user.getEmail(),user.getRole(), user.getId(), user.getUserName());
         return Response.builder()
                 .status(200)
                 .message("User Logged in successfully")
-                .role(user.getRole())
                 .token(token)
                 .expirationTime("6 months")
                 .build();
     }
 
     @Override
-    public Response getAllUsers() {
-        log.info("Get all users");
+    public Rs getAllUsers() {
+        UserServiceImpl.log.info("Get all users");
         List<User> users = userRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
-        List<UserDTO> usersDTOS = modelMapper.map(users , new TypeToken<List<UserDTO>>(){}.getType());
-        return Response.builder()
+        List<UsDTO> usersDTOS = modelMapper.map(users , new TypeToken<List<UsDTO>>(){}.getType());
+        return Rs.builder()
                 .status(200)
                 .message("success")
                 .users(usersDTOS)
@@ -98,8 +98,9 @@ public class UserServiceImpl implements UserService {
         User existingUser = userRepository.findById(id)
                 .orElseThrow(()->new NotFoundException("User not found"));
 
-        if(userDTO.getFname() != null) existingUser.setFname(userDTO.getFname());
-        if(userDTO.getLname() != null) existingUser.setLname(userDTO.getLname());
+        if(userDTO.getFirstName() != null) existingUser.setFirstName(userDTO.getFirstName());
+        if(userDTO.getLastName() != null) existingUser.setLastName(userDTO.getLastName());
+        if(userDTO.getUserName() != null) existingUser.setLastName(userDTO.getUserName());
         if(userDTO.getEmail() != null) existingUser.setEmail(userDTO.getEmail());
         if(userDTO.getRole() != null) existingUser.setRole(userDTO.getRole());
 
@@ -125,4 +126,37 @@ public class UserServiceImpl implements UserService {
                 .message("User successfully delted")
                 .build();
     }
+
+    @Override
+    public List<User> searchUsers(String searchTerm) {
+        return userRepository.searchUsers(searchTerm);
+    }
+
+    @Override
+    public Response revokeUserRole(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        user.setRole(Role.USER);
+        System.out.println(user);
+        userRepository.save(user);
+        return Response.builder()
+                .status(200)
+                .message("User role successfully revoked")
+                .build();
+    }
+
+    @Override
+    public User findByEmail(String email) {
+        User user = userRepository.findUserByEmail(email)
+                .orElseThrow(()-> new NotFoundException("User not found"));
+        return user;
+    }
+
+    public void changeUserPassword(User user, String newPassword) {
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
+
 }
