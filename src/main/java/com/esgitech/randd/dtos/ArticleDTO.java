@@ -21,6 +21,10 @@ public class ArticleDTO {
 
     private Category category;
 
+    private String doi;
+
+    private String tag;
+
     private byte[] pdfData;
 
     private UserDTO user;
