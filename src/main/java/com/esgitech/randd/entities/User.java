@@ -37,6 +37,7 @@ public class User{
 
     private String userName;
 
+    @Column(nullable = false, unique = true)
     private String email;
 
     @NotBlank(message="last name is required")
@@ -46,7 +47,7 @@ public class User{
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Article> articlesSet = new ArrayList<>();
 
     @Column(name = "created_at")

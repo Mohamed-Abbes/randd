@@ -1,5 +1,6 @@
 package com.esgitech.randd.entities;
 
+import com.esgitech.randd.enums.ArticleStatus;
 import com.esgitech.randd.enums.Category;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -12,6 +13,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @AllArgsConstructor
@@ -39,7 +42,15 @@ public class Article {
     private String content;
 
     @Enumerated(EnumType.STRING)
+    private ArticleStatus status = ArticleStatus.PENDING;
+
+    @Column(columnDefinition = "TEXT")
+    private String rejectionReason;
+
+    @Enumerated(EnumType.STRING)
     private Category category;
+
+    private String tag;
 
     @ManyToOne
     @JoinColumn(name="users_id", nullable=false)
@@ -52,6 +63,14 @@ public class Article {
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    @ManyToMany
+    @JoinTable(
+            name = "article_domaine",
+            joinColumns = @JoinColumn(name = "article_id"),
+            inverseJoinColumns = @JoinColumn(name = "domaine_id")
+    )
+    private Set<Domaine> domaines = new HashSet<>();
 
     @Override
     public String toString() {

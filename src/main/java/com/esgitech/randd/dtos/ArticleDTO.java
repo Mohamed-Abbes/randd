@@ -1,5 +1,6 @@
 package com.esgitech.randd.dtos;
 
+import com.esgitech.randd.enums.ArticleStatus;
 import com.esgitech.randd.enums.Category;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -24,6 +25,8 @@ public class ArticleDTO {
     private String doi;
 
     private String tag;
+
+    private ArticleStatus status;
 
     private byte[] pdfData;
 

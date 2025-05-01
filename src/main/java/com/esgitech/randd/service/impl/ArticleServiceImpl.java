@@ -3,6 +3,7 @@ package com.esgitech.randd.service.impl;
 import com.esgitech.randd.dtos.ArticleDTO;
 import com.esgitech.randd.dtos.Response;
 import com.esgitech.randd.entities.Article;
+import com.esgitech.randd.enums.ArticleStatus;
 import com.esgitech.randd.entities.User;
 import com.esgitech.randd.exception.NotFoundException;
 import com.esgitech.randd.repository.ArticleRepository;
@@ -17,12 +18,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -45,20 +43,23 @@ public class ArticleServiceImpl implements ArticleService {
         Article articleToSave = Article.builder()
                 .title(articleDTO.getTitle())
                 .content(articleDTO.getContent())
+                .doi(articleDTO.getDoi())
                 .category(articleDTO.getCategory())
                 .user(user)
+                .status(ArticleStatus.PENDING) // New articles should be PENDING by default
                 .build();
 
         articleRepository.save(articleToSave);
         return Response.builder()
                 .status(201)
-                .message("Article successfully created")
+                .message("Article successfully created and is pending approval")
                 .build();
     }
 
     @Override
     public Response getAllArticles() {
-        List<Article> articles = articleRepository.findAll(Sort.by(Sort.Direction.ASC, "title"));
+        // Only return APPROVED articles for general listing
+        List<Article> articles = articleRepository.findByStatus(ArticleStatus.APPROVED, Sort.by(Sort.Direction.ASC, "title"));
         List<ArticleDTO> articlesDTOS = getViewArticleDTOS(articles);
         return Response.builder()
                 .status(200)
@@ -70,6 +71,12 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     public Response getArticleById(Long id) {
         Article article = getArticleWithException(id);
+
+        // Only allow access to APPROVED articles, or PENDING/REJECTED if user is the owner or admin
+        //        // You'll need to implement proper authorization checks here
+        // For now, we'll just return the article regardless of status
+        // In a real application, you should check user permissions
+
         ArticleDTO articleDTO = modelMapper.map(article, ArticleDTO.class);
         return Response.builder()
                 .status(200)
@@ -82,6 +89,12 @@ public class ArticleServiceImpl implements ArticleService {
     public Response updateArticle(Long id, ArticleDTO articleDTO) {
         Article existingArticle = getArticleWithException(id);
 
+        // If article was approved/rejected, changing it should set status back to PENDING
+        if (existingArticle.getStatus() != ArticleStatus.PENDING) {
+            existingArticle.setStatus(ArticleStatus.PENDING);
+            existingArticle.setRejectionReason(null); // Clear rejection reason if it exists
+        }
+
         if (articleDTO.getTitle() != null && !articleDTO.getTitle().isBlank()) {
             existingArticle.setTitle(articleDTO.getTitle());
         }
@@ -92,10 +105,14 @@ public class ArticleServiceImpl implements ArticleService {
             existingArticle.setCategory(articleDTO.getCategory());
         }
 
+        if (articleDTO.getTag() != null) {
+            existingArticle.setTag(articleDTO.getTag());
+        }
+
         articleRepository.save(existingArticle);
         return Response.builder()
                 .status(200)
-                .message("Article updated successfully")
+                .message("Article updated successfully and status set to pending")
                 .build();
     }
 
@@ -111,7 +128,12 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public Response searchArticle(String input) {
-        List<Article> articlesList = articleRepository.findByTitleContainingOrContentContaining(input, input);
+        // Only search through APPROVED articles for general search
+        List<Article> articlesList = articleRepository.findByStatusAndTitleContainingIgnoreCaseOrStatusAndContentContainingIgnoreCaseOrStatusAndDoiContainingIgnoreCase(
+                ArticleStatus.APPROVED, input,
+                ArticleStatus.APPROVED, input,
+                ArticleStatus.APPROVED, input);
+
         if (articlesList.isEmpty()) {
             throw new NotFoundException("Article not found");
         }
@@ -124,21 +146,61 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    @Transactional
-    public Response attachPdfToArticle(Long articleId, MultipartFile file) throws IOException {
-        Article article = getArticleWithException(articleId);
-
-        if (article.getPdfFileName() != null) {
-            fileStorageService.deleteFile(article.getPdfFileName());
-        }
-
-        String fileName = fileStorageService.storeFile(file);
-        article.setPdfFileName(fileName);
-        articleRepository.save(article);
-
+    public Response getPendingArticles() {
+        List<Article> articles = articleRepository.findByStatus(ArticleStatus.PENDING, Sort.by(Sort.Direction.ASC, "title"));
+        List<ArticleDTO> articlesDTOS = getViewArticleDTOS(articles);
         return Response.builder()
-                .status(201)
-                .message("File attached to article successfully")
+                .status(200)
+                .articles(articlesDTOS)
+                .message("Pending articles retrieved successfully")
+                .build();
+    }
+
+    @Override
+    public Response getApprovedArticles() {
+        List<Article> articles = articleRepository.findByStatus(ArticleStatus.APPROVED, Sort.by(Sort.Direction.ASC, "title"));
+        List<ArticleDTO> articlesDTOS = getViewArticleDTOS(articles);
+        return Response.builder()
+                .status(200)
+                .articles(articlesDTOS)
+                .message("Approved articles retrieved successfully")
+                .build();
+    }
+
+    @Override
+    public Response getRejectedArticles() {
+        List<Article> articles = articleRepository.findByStatus(ArticleStatus.REJECTED, Sort.by(Sort.Direction.ASC, "title"));
+        List<ArticleDTO> articlesDTOS = getViewArticleDTOS(articles);
+        return Response.builder()
+                .status(200)
+                .articles(articlesDTOS)
+                .message("Rejected articles retrieved successfully")
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public Response approveArticle(Long id) {
+        Article article = getArticleWithException(id);
+        article.setStatus(ArticleStatus.APPROVED);
+        article.setRejectionReason(null); // Clear any previous rejection reason
+        articleRepository.save(article);
+        return Response.builder()
+                .status(200)
+                .message("Article approved successfully")
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public Response rejectArticle(Long id, String reason) {
+        Article article = getArticleWithException(id);
+        article.setStatus(ArticleStatus.REJECTED);
+        article.setRejectionReason(reason);
+        articleRepository.save(article);
+        return Response.builder()
+                .status(200)
+                .message("Article rejected successfully")
                 .build();
     }
 

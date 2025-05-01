@@ -14,8 +14,11 @@ public interface ArticleService {
     Response deleteArticle (Long id);
     Response searchArticle(String input);
 //    Response attachPdfToArticle(Long articleId, MultipartFile file) throws IOException;
-    Response attachPdfToArticle(Long articleId, MultipartFile file) throws IOException;
-
+    Response rejectArticle(Long id, String reason);
+    Response approveArticle(Long id);
+    Response getRejectedArticles();
+    Response getApprovedArticles();
+    Response getPendingArticles();
 
 
 }

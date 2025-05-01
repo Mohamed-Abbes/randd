@@ -33,8 +33,8 @@ public class JwtUtils {
     public String generateToken(String email, Role role, Long id, String userName) {
         return Jwts.builder()
                 .subject(email)
-                .claim("userName",userName)
-                .claim("role", role)
+                .claim("userName", userName)
+                .claim("role", role.name())
                 .claim("id", id)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME_MILLIS))

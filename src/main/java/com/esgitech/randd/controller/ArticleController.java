@@ -14,6 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -60,8 +62,7 @@ public class ArticleController {
     }
 
     @PostMapping("/upload-pdf/{articleId}")
-    public ResponseEntity<?> uploadArticlePdf(@PathVariable Long articleId,
-                                              @RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> uploadArticlePdf(@PathVariable Long articleId, @RequestParam("file") MultipartFile file) {
         Optional<Article> articleOptional = articleRepository.findById(articleId);
         if (articleOptional.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -96,20 +97,17 @@ public class ArticleController {
         }
     }
 
-
-    //Tested and validated
     @PostMapping
     public ResponseEntity<Response> addArticle( @RequestBody ArticleDTO articleDTO) throws IOException {
         System.out.println(articleDTO);
         return ResponseEntity.ok(articleService.createArticle(articleDTO));
     }
-    //Tested and validated
+
     @GetMapping("/{id}")
     public ResponseEntity<Response> getArticleById(@PathVariable Long id) {
         return ResponseEntity.ok(articleService.getArticleById(id));
     }
 
-    //Tested and validated
     @GetMapping("/all")
     public ResponseEntity<Response> getAllArticles() {
         return ResponseEntity.ok(articleService.getAllArticles());
@@ -126,14 +124,38 @@ public class ArticleController {
     }
 
     @DeleteMapping("/delete/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'MODERATOR')")
     public ResponseEntity<Response> deleteArticle( @PathVariable Long id) {
         return ResponseEntity.ok(articleService.deleteArticle(id));
     }
 
+    //Show Article status
+    @GetMapping("/pending")
+    public ResponseEntity<Response> getPendingArticles() {
+        return ResponseEntity.ok(articleService.getPendingArticles());
+    }
 
+    @GetMapping("/approved")
+    public ResponseEntity<Response> getApprovedArticles() {
+        return ResponseEntity.ok(articleService.getApprovedArticles());
+    }
 
+    @GetMapping("/rejected")
+    public ResponseEntity<Response> getRejectedArticles() {
+        return ResponseEntity.ok(articleService.getRejectedArticles());
+    }
 
+    //Moderator Actions
+    @PutMapping("/approve/{id}")
+    public ResponseEntity<Response> approveArticle(@PathVariable Long id) {
+        return ResponseEntity.ok(articleService.approveArticle(id));
+    }
 
+    @PutMapping("/reject/{id}")
+    public ResponseEntity<Response> rejectArticle(@PathVariable Long id, @RequestBody Map<String, String> request) {
+        String reason = request.get("reason");
+        return ResponseEntity.ok(articleService.rejectArticle(id, reason));
+    }
 
 
 

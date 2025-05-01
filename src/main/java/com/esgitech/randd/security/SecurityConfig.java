@@ -18,9 +18,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 @Slf4j
 public class SecurityConfig {
@@ -39,6 +40,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(request->request
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/articles/download-pdf/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(manager->manager

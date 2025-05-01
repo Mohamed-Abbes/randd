@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +33,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Response registerUser(RegisterRequest registerRequest) {
-        User userTosave = User.builder()
+        if (userRepository.findUserByEmail(registerRequest.getEmail()).isPresent()) {
+            throw new RuntimeException("User already exists");
+        }
+
+        User userToSave = User.builder()
                 .firstName(registerRequest.getFirstName())
                 .lastName(registerRequest.getLastName())
                 .userName(registerRequest.getUserName())
@@ -41,10 +46,11 @@ public class UserServiceImpl implements UserService {
                 .role(registerRequest.getRole() != null ? registerRequest.getRole() : Role.USER)
                 .build();
 
-        userRepository.save(userTosave);
+        userRepository.save(userToSave);
+
         return Response.builder()
-                .status(200)
-                .message("User was sucessfully registred")
+                .status(HttpStatus.OK.value()) // Optional, instead of hardcoding 200
+                .message("User was successfully registered")
                 .build();
     }
 
@@ -119,7 +125,7 @@ public class UserServiceImpl implements UserService {
     public Response deleteUser(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(()->new NotFoundException("User not found"));
-
+        System.out.println(user);
         userRepository.delete(user);
         return Response.builder()
                 .status(200)
